@@ -1,9 +1,15 @@
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null
 
 export async function sendOrderConfirmation(orderId: string) {
+  if (!resend) {
+    console.warn('RESEND_API_KEY is missing, skipping email sending')
+    return
+  }
   // Use Service Role Key to access user email and storage
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
