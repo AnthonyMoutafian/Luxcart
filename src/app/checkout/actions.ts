@@ -72,16 +72,10 @@ export async function processCheckout() {
     throw new Error('Failed to create order items')
   }
 
-  // 4. Call Pay4Work API (or fallback to mock)
+  // 4. Initiate Payment (Stripe)
   try {
-    let paymentUrl
-    try {
-      paymentUrl = await createPaymentLink(order.id, totalAmount, cartItems)
-    } catch (apiError) {
-      console.error('Pay4Work API failed, falling back to mock payment:', apiError)
-      // Fallback to internal mock payment page
-      paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/mock?orderId=${order.id}&amount=${totalAmount}`
-    }
+    // Currently using simulated Stripe payment page until verification is complete
+    const paymentUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/mock?orderId=${order.id}&amount=${totalAmount}`
     
     // Update order with payment URL
     await supabase
@@ -101,47 +95,5 @@ export async function processCheckout() {
   }
 }
 
-async function createPaymentLink(orderId: string, amount: number, items: any[]) {
-  const apiKey = process.env.PAY4WORK_API_KEY
-  
-  if (!apiKey) {
-    throw new Error('Payment configuration missing')
-  }
-
-  // Attempt to call the API
-  try {
-    const response = await fetch('https://app.pay4.work/api/payment/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey
-      },
-      body: JSON.stringify({
-        order_id: orderId,
-        amount: amount,
-        currency: 'USD',
-        description: `Order #${orderId}`,
-        items: items.map((item: any) => ({
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.product.price
-        })),
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/pay4work`,
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/account`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cart`
-      })
-    })
-
-    if (!response.ok) {
-       const text = await response.text();
-       console.error('Pay4Work API response:', text);
-       throw new Error(`Payment API failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json()
-    return data.payment_url
-  } catch (e) {
-    // Re-throw to trigger fallback
-    throw e
-  }
-}
+// Deprecated: Pay4Work integration (removed for Stripe migration)
+// async function createPaymentLink(orderId: string, amount: number, items: any[]) { ... }
